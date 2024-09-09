@@ -1,0 +1,25 @@
+{
+  "name": "quickauth",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "run": "node index.js",
+    "test": "node test.js"
+
+  },
+  "author": "Jana Coulomb",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "repository": {
+    "type": "url",
+    "url": "https://github.com/JanaCoulomb/quickauth"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.2.1",
+    "express": "^4.19.2"
+  }
+}
