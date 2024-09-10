@@ -1,98 +1,50 @@
 //TODO: rework this test script
+require('dotenv').config()
 
 const baseUrl = process.env.TESTURL || ('http://localhost:'+(process.env.PORT || 3000));
 
+async function singleTest (route,json,expectedStatus) {
+    console.log("Running",route,"and expecting HTTP Status Code",expectedStatus)
+    const j1 = await doPostFetch(baseUrl+"/"+route,json)
+    
+    if(!j1 || j1.status != expectedStatus)
+    {
+        console.log("Test failed!"); 
+        return false;
+    }
+    console.log("Test passed!"); 
+    return j1.json;
+
+}
+
 async function test () {
 
-    console.log("Running /init test")
-    const j1 = await doPostFetch(baseUrl+"/init",{password: "1234",secret: "1234"})
-    
-
-    if(!(j1.result.status == "created"))
-    {
-        console.log("Test failed!"); 
+    var res;
+    if(!(res = await singleTest("init",{password:"password",secret:"secret"},200)))
         return;
-    }
-    console.log("Test passed!"); 
 
-    console.log("Running /get test")
+    key = res.key;
 
-    const j2 = await doPostFetch(baseUrl+"/get",{key: j1.result.key,password: "1234"})
-
-
-    if(!(j2.result.status == "accessed"))
-    {
-        console.log("Test failed!"); 
+    if(!(res = await singleTest("get",{password:"password",key:key},200)))
         return;
-    }
-    console.log("Test passed!"); 
 
-    console.log("Running /get test negativ")
-
-
-    const j3 = await doPostFetch(baseUrl+"/get",{key: j1.result.key,password: "12345"})
-
-
-    if(!(j3.result.status == "access-denied"))
-    {
-        console.log("Test failed!"); 
+    if(!(res = await singleTest("get",{password:"wrongpassword",key:key},401)))
         return;
-    }
-    console.log("Test passed!"); 
 
-    console.log("Running /update test")
-
-    
-    const j4 = await doPostFetch(baseUrl+"/update",{key: j1.result.key,password: "12345",secret: "1234"})
-       
-
-    if(!(j4.result.status == "updated"))
-    {
-        console.log("Test failed!"); 
+    if(!(res = await singleTest("update-password",{password:"password",key:key,newPassword:"newpassword"},200)))
         return;
-    }
-    console.log("Test passed!"); 
 
-    console.log("Confirming /update test wuth a /get test")
-
-
-    const j5 = await doPostFetch(baseUrl+"/get",{key: j1.result.key,password: "12345"})
-
-
-    if(!(j5.result.status == "accessed"))
-    {
-        console.log("Test failed!"); 
+    if(!(res = await singleTest("get",{password:"password",key:key},401)))
         return;
-    }
-    console.log("Test passed!"); 
 
-    console.log("Running /purge test")
-
-
-    const j6 = await doPostFetch(baseUrl+"/purge",{key: j1.result.key})
-
-
-    if(!(j6.result.status == "purged"))
-    {
-        console.log("Test failed!"); 
+    if(!(res = await singleTest("get",{password:"newpassword",key:key},200)))
         return;
-    }
-    console.log("Test passed!"); 
-        
-    console.log("Confirming /purge test wuth a /get test")
 
-
-    const j7 = await doPostFetch(baseUrl+"/get",{key: j1.result.key,password: "12345"})
-    
-
-    if(!(j7.result.status == "access-denied"))
-    {
-        console.log("Test failed!"); 
+    if(!(res = await singleTest("purge",{password:"newpassword",key:key},200)))
         return;
-    }
-    console.log("Test passed!"); 
 
-    console.log("All 7/7 tests passed!"); 
+    if(!(res = await singleTest("get",{password:"newpassword",key:key},404)))
+        return;
 
 
 }
@@ -110,12 +62,13 @@ async function doPostFetch (url,data) {
             headers: myHeaders,
 
         });
-        const json = await res.json();
 
         console.log(' Fetch Result ');
         console.log(' | Status Code:', res.status);
+        const json = await res.json();
+
         console.log(' | Json Data:', json);
-        return json;
+        return {status:res.status,json:json};
 
     } catch (err) {
         console.log(err.message); //can be console.error
